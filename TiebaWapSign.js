@@ -2,7 +2,7 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.0.1
+// @version		0.2.0.2
 // @created		2012-11-23
 // @lastUpdated	2012-11-24
 // @namespace	https://github.com/izml/
@@ -11,7 +11,7 @@
 // @updateURL	https://raw.github.com/izml/tws/master/TiebaWapSign.meta.js
 // @run-at document-start
 // @grant none
-// @include		http://wapp.baidu.com/f/*
+// @include		http://wapp.baidu.com/*
 // @include		http://tieba.baidu.com/*
 // @exclude		http://wapp.baidu.com/f/*sign?*
 // ==/UserScript==
@@ -24,13 +24,14 @@ var tws_let=tws_getState();
 window.addEventListener('DOMContentLoaded',tws_show_tip,false);
 
 function tws_getState(){
-	var let=tws_storage['tws_let_sign'];
-	if(Number(let)==1) return 1;
+	if(location.hostname!='wapp.baidu.com') return 0;
+	var lets=tws_storage['tws_let_sign'];
+	if(Number(lets)==1) return 1;
 	if(window.opener){
-		let=Number(window.name);
-		if(let==0 || let==1){
+		lets=Number(window.name);
+		if(lets==0 || lets==1){
 			window.name='我喜欢的吧';
-			return let;
+			return lets;
 		}
 	}
 	return 0;
