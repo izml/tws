@@ -2,22 +2,22 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.0.2
+// @version		0.2.0.3
 // @created		2012-11-23
 // @lastUpdated	2012-11-24
 // @namespace	https://github.com/izml/
 // @homepage	https://github.com/izml/tws
 // @downloadURL	https://raw.github.com/izml/tws/master/TiebaWapSign.js
 // @updateURL	https://raw.github.com/izml/tws/master/TiebaWapSign.meta.js
-// @run-at document-start
-// @grant none
+// @run-at	document-start
+// @grant	none
 // @include		http://wapp.baidu.com/*
 // @include		http://tieba.baidu.com/*
 // @exclude		http://wapp.baidu.com/f/*sign?*
 // ==/UserScript==
 
 var tws_tip = 1;		// 开启每日手机签到提示：0=关闭; 1=开启
-var tws_auto_fav=1;		// 自动为未加入的贴吧添加“喜欢”
+var tws_auto_fav=0;		// 自动为未加入的贴吧添加“喜欢”,默认关闭(不影响签到)
 var tws_delay=800;		// 意外延时，毫秒
 var tws_storage=window.localStorage;
 var tws_let=tws_getState();
@@ -202,6 +202,9 @@ function tws_signStart(info){
 							td.innerHTML='之前已签到！获得的经验值未知';
 							break;
 						case '喜欢本吧':	// 可能会有问题
+							var url=sign.href.replace(/favolike/?uid=\d+&itb_/,'sign?');
+							var obj={id:a.id,url:url,t:a.t,f:xhrSignChange};
+							getXHR(obj, xhrSigns);
 							if(tws_auto_fav!=1) break;
 							var light=xml.getElementsByClassName('light');
 							if(light.length>0){
