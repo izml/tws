@@ -2,7 +2,7 @@
 // @name	Tieba wap sign for Opera
 // @author	izml
 // @description	Opera 版贴吧 wap 批量签到
-// @version		0.1.1.7
+// @version		0.1.1.8
 // @created		2012-11-23
 // @lastUpdated	2012-11-23
 // @include		http://wapp.baidu.com/f/*
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 var tws_tip = 1;		// 开启每日手机签到提示：0=关闭; 1=开启
-var tws_delay=500;
+var tws_delay=800;
 var tws_storage=window.localStorage;
 var tws_let=tws_getState();
 tws_show_tip();
@@ -151,7 +151,7 @@ function tws_signStart(info){
 							tws_setInfo(info);
 							td.innerHTML='之前已签到！获得的经验值未知';
 							break;
-						case '喜欢本吧':
+						case '喜欢本吧':	// 可能会有问题
 							var light=xml.getElementsByClassName('light');
 							if(light.length>0){
 								var text=light[0].textContent;
@@ -160,12 +160,15 @@ function tws_signStart(info){
 									break;
 								}
 							}
+						//	setCell(td,'请手动',sign.href,'加喜欢');
+						/*	自动加喜欢过多会出错	*/
 							td.innerHTML='正在加为喜欢，稍后自动签到！';
 							var obj={id:a.id,url:sign.href,t:a.t,f:a.f};
 							window.setTimeout(function(){
 								xhrGet(obj, xhrLinks);
 							},tws_delay);
-						//	tws_delay*=2;
+							tws_delay+=tws_delay;
+						/**/
 							break;
 						default:
 							td.innerHTML='未知错误！请手动签到';
@@ -181,15 +184,26 @@ function tws_signStart(info){
 			if(xhrSigns[i].xhr.readyState==4){
 				var a=xhrSigns[i].obj;
 				var xml=xhrSigns[i].xhr.responseXML;
+				xhrSigns.splice(i,1);
 				var light=xml.getElementsByClassName('light');
 				var td=getCell(tr[a.id]);
 				var text='';
 				if(light.length>0)
 					text=light[0].textContent;
 				if(text.indexOf('签到成功')<0){
-					if(xml.getElementsByClassName('bc')[0].lastChild.textContent!='已签到')
-						setCell(td,'签到失败，请',a.url,'手动签到');
-					else {
+					var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
+					if(sign.textContent!='已签到'){
+						if(text.indexOf('汗，操作未成功')==0){
+							setCell(td,'汗，操作未成功,请手动',sign.lastChild.href,'签到'+text);
+							tws_setInfo(info);
+							return;
+						}
+						td.innerHTML='操作失败，正在重新签到！'+text;
+						var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:a.f};
+						window.setTimeout(function(){
+							xhrGet(obj, xhrLinks);
+						},tws_delay);
+					} else {
 						td.innerHTML='未知错误，之前已签到！';
 						info.list[a.t]=0;
 					}
@@ -198,7 +212,6 @@ function tws_signStart(info){
 					td.innerHTML='<span class="light">'+text+'</span>';
 				}
 				tws_setInfo(info);
-				xhrSigns.splice(i,1);
 			}
 		}
 	}
