@@ -2,7 +2,7 @@
 // @name	Tieba wap sign for Opera
 // @author	izml
 // @description	Opera 版贴吧 wap 批量签到
-// @version		0.1.1.8
+// @version		0.2.0
 // @created		2012-11-23
 // @lastUpdated	2012-11-23
 // @include		http://wapp.baidu.com/f/*
@@ -16,7 +16,7 @@ var tws_tip = 1;		// 开启每日手机签到提示：0=关闭; 1=开启
 var tws_delay=800;
 var tws_storage=window.localStorage;
 var tws_let=tws_getState();
-tws_show_tip();
+window.addEventListener('DOMContentLoaded',tws_show_tip,false);
 
 function tws_getState(){
 	var let=tws_storage['tws_let_sign'];
@@ -37,15 +37,16 @@ function tws_show_tip(){
 		return;
 	}
 	var info=tws_getInfo();
+	var abc=info[info.cid];
 	if(tws_tip==1){
-		if(info.start==1) return;
+		if(abc.tips==1) return;
 		var t=confirm('每日提示，是否开始手机签到：\n　通过修改脚本中的值可以关闭提示！\n\n'
 			+'　　确定：进行手机签到(若提示有弹出窗口请单击打开)\n　　取消或Esc键：不进行签到',1);
-		info.start=1;
+		abc.tips=1;
 		tws_setInfo(info);
 		if(!t) return;
 	} else {
-		info.start=0;
+		abc.tips=0;
 		tws_setInfo(info);
 		return;
 	}
@@ -55,7 +56,7 @@ function tws_show_tip(){
 function tws_wap_sign(){
 	if(location.href.search(/wapp\.baidu\.com\/f\/.*tab=favorite/)<0){
 		var url='http://wapp.baidu.com/f/m?tn=bdFBW&tab=favorite';
-		if(location.href.search(/wapp\.baidu\.com\/.*/)>0){
+		if(location.hostname=='wapp.baidu.com'){
 			tws_storage['tws_let_sign']=1;
 			window.open(url)
 		} else
@@ -74,16 +75,58 @@ function tws_getInfo(){
 		now=new Date();
 		return now.toDateString();
 	}
-	var info={start:0,date:getNow(),list:{}};
+	var bid='';
+	switch(location.hostname){
+		case 'wapp.baidu.com':
+			var xhr=new XMLHttpRequest();
+			xhr.onreadystatechange=function(){
+				if(xhr.readyState==4){
+					var a=xhr.responseXML.getElementsByClassName('s')[0].firstElementChild.firstElementChild;
+					if(a.textContent=='>>我的i贴吧'){
+						var n=a.href.match(/[?&]un=([^&]+)/)[1];
+						bid=decodeURI(n);
+					}
+				}
+			}
+			xhr.open('GET','http://wapp.baidu.com/',false);
+			xhr.send();
+			break;
+		case 'tieba.baidu.com':
+			var ss=document.getElementsByTagName('script');
+			var url=ss[ss.length-1].innerHTML.match(/var url\s*=\s*\'([^\']+)/);
+			if(url==null){
+				bid=PageData.user.name;
+			} else {
+				var xhr=new XMLHttpRequest();
+				xhr.onreadystatechange=function(){
+					if(xhr.readyState==4){
+						var u=JSON.parse(xhr.responseText);
+						bid=u.user.name;
+					}
+				}
+				xhr.open('GET',url[1],false);
+				xhr.send();
+			}
+			break;
+		default:break;
+	}
+	if(bid==''){
+		var bid=prompt('错误，暂时找不到账号名\n\n或者手动输入一个当前账号名','');
+	}
+	var info={cid:bid};
+	info[bid]={tips:0,date:getNow(),list:{}}
 	var infos=tws_storage['tws_wap_sign_info'];
 	if(typeof infos!='undefined'){
 		var infos=JSON.parse(infos);
-		if(infos.date==getNow()){
-			info=infos;
-			if(tws_let==1) info.start=0;
+		if(typeof infos[bid]!='undefined' && infos[bid].date==getNow()){
+			if(tws_let==1) infos[bid].tips=0;
+		} else {
+			infos[bid]=info[bid];
 		}
-	}
-	return info;
+		infos.cid=bid;
+	} else infos=info;
+	tws_setInfo(infos);
+	return infos;
 }
 
 function tws_setInfo(info){
@@ -91,19 +134,20 @@ function tws_setInfo(info){
 }
 
 function tws_signStart(info){
+	var abc=info[info.cid];
 	tws_storage['tws_let_sign']=0;
 	if(document.body.textContent.indexOf('对不起,您没有访问权限!')==0) return;
 	var tr=document.getElementsByTagName('table')[0].rows;
 	var xhrLinks=[],xhrSigns=[];
-	info.start=1;
+	abc.tips=1;
 	for(var i=0; i<tr.length; i++){
 		var td=getCell(tr[i]);
 		var a=tr[i].firstElementChild.firstElementChild;
-		var exp=info.list[a.textContent];
+		var exp=abc.list[a.textContent];
 		if(typeof exp=='undefined'){
 			td.innerHTML='正在获取签到信息。。。';
 			var obj={id:i,url:a.href,t:a.textContent,f:xhrLinkChange};
-			xhrGet(obj, xhrLinks);
+			getXHR(obj, xhrLinks);
 		} else if(Number(exp)>0) td.innerHTML='<span class="light">已签到！获得经验值+'+exp+'</span>';
 		else td.innerHTML='之前已签到！获得的经验值未知';
 	}
@@ -119,16 +163,16 @@ function tws_signStart(info){
 		a.innerHTML=t;
 		td.innerHTML=s;
 		td.appendChild(a);
-	};
-	function xhrSet(obj, xhr){
+	}
+	function setXHR(obj, xhr){
 		this.obj = obj;
 		this.xhr = xhr;
 	}
-	function xhrGet(obj, xhrs){
+	function getXHR(obj, xhrs){
 		var xhr=new XMLHttpRequest();
 		xhr.onreadystatechange = obj.f;
-		xhr.open("GET",obj.url,false);
-		xhrs.push(new xhrSet(obj, xhr));
+		xhr.open('GET',obj.url,true);
+		xhrs.push(new setXHR(obj, xhr));
 		xhr.send();
 	}
 	function xhrLinkChange(){
@@ -144,10 +188,10 @@ function tws_signStart(info){
 						case '签到':
 							td.innerHTML='正在进行签到。。。';
 							var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange}
-							xhrGet(obj, xhrSigns);
+							getXHR(obj, xhrSigns);
 							break;
 						case '已签到':
-							info.list[a.t]=0;
+							abc.list[a.t]=0;
 							tws_setInfo(info);
 							td.innerHTML='之前已签到！获得的经验值未知';
 							break;
@@ -165,7 +209,7 @@ function tws_signStart(info){
 							td.innerHTML='正在加为喜欢，稍后自动签到！';
 							var obj={id:a.id,url:sign.href,t:a.t,f:a.f};
 							window.setTimeout(function(){
-								xhrGet(obj, xhrLinks);
+								getXHR(obj, xhrLinks);
 							},tws_delay);
 							tws_delay+=tws_delay;
 						/**/
@@ -195,20 +239,19 @@ function tws_signStart(info){
 					if(sign.textContent!='已签到'){
 						if(text.indexOf('汗，操作未成功')==0){
 							setCell(td,'汗，操作未成功,请手动',sign.lastChild.href,'签到'+text);
-							tws_setInfo(info);
 							return;
 						}
 						td.innerHTML='操作失败，正在重新签到！'+text;
 						var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:a.f};
 						window.setTimeout(function(){
-							xhrGet(obj, xhrLinks);
+							getXHR(obj, xhrLinks);
 						},tws_delay);
 					} else {
 						td.innerHTML='未知错误，之前已签到！';
-						info.list[a.t]=0;
+						abc.list[a.t]=0;
 					}
 				} else {
-					info.list[a.t]=Number(light[1].textContent);
+					abc.list[a.t]=Number(light[1].textContent);
 					td.innerHTML='<span class="light">'+text+'</span>';
 				}
 				tws_setInfo(info);
