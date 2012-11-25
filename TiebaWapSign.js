@@ -2,9 +2,9 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.0.3
+// @version		0.2.0.4
 // @created		2012-11-23
-// @lastUpdated	2012-11-24
+// @lastUpdated	2012-11-25
 // @namespace	https://github.com/izml/
 // @homepage	https://github.com/izml/tws
 // @downloadURL	https://raw.github.com/izml/tws/master/TiebaWapSign.js
@@ -18,7 +18,7 @@
 
 var tws_tip = 1;		// 开启每日手机签到提示：0=关闭; 1=开启
 var tws_auto_fav=0;		// 自动为未加入的贴吧添加“喜欢”,默认关闭(不影响签到)
-var tws_delay=800;		// 意外延时，毫秒
+var tws_delay=1000;		// 签到延时，毫秒
 var tws_storage=window.localStorage;
 var tws_let=tws_getState();
 window.addEventListener('DOMContentLoaded',tws_show_tip,false);
@@ -78,7 +78,7 @@ function tws_wap_sign(){
 
 function tws_getInfo(){
 	function getNow(){
-		now=new Date();
+		var now=new Date();
 		return now.toDateString();
 	}
 	var bid='';
@@ -140,6 +140,7 @@ function tws_setInfo(info){
 }
 
 function tws_signStart(info){
+	var tws_delay_x=tws_delay;
 	var abc=info[info.cid];
 	tws_storage['tws_let_sign']=0;
 	if(document.body.textContent.indexOf('对不起,您没有访问权限!')==0) return;
@@ -153,8 +154,8 @@ function tws_signStart(info){
 		if(typeof exp=='undefined'){
 			td.innerHTML='正在获取签到信息。。。';
 			var obj={id:i,url:a.href,t:a.textContent,f:xhrLinkChange};
-			getXHR(obj, xhrLinks);
-		} else if(Number(exp)>0) td.innerHTML='<span class="light">已签到！获得经验值+'+exp+'</span>';
+			getXHR(obj, xhrLinks, 0);
+		} else if(Number(exp)>0) td.innerHTML='<span class="light">已签到！经验值+'+exp+'</span>';
 		else td.innerHTML='之前已签到！获得的经验值未知';
 	}
 	function getCell(tr){
@@ -174,12 +175,15 @@ function tws_signStart(info){
 		this.obj = obj;
 		this.xhr = xhr;
 	}
-	function getXHR(obj, xhrs){
+	function getXHR(obj, xhrs, delay){
 		var xhr=new XMLHttpRequest();
 		xhr.onreadystatechange = obj.f;
-		xhr.open('GET',obj.url,true);
+		xhr.open('GET',obj.url,false);
 		xhrs.push(new setXHR(obj, xhr));
-		xhr.send();
+		if(delay>0){
+			setTimeout(function(){xhr.send();},tws_delay);
+			tws_delay_x+=tws_delay_x;
+		} else xhr.send();
 	}
 	function xhrLinkChange(){
 		for(var i=0; i<xhrLinks.length; i++){
@@ -194,7 +198,7 @@ function tws_signStart(info){
 						case '签到':
 							td.innerHTML='正在进行签到。。。';
 							var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange}
-							getXHR(obj, xhrSigns);
+							getXHR(obj, xhrSigns, 1);
 							break;
 						case '已签到':
 							abc.list[a.t]=0;
@@ -202,9 +206,9 @@ function tws_signStart(info){
 							td.innerHTML='之前已签到！获得的经验值未知';
 							break;
 						case '喜欢本吧':	// 可能会有问题
-							var url=sign.href.replace(/favolike/?uid=\d+&itb_/,'sign?');
+							var url=sign.href.replace(/favolike\?uid=\d+\&itb_/,'sign?');
 							var obj={id:a.id,url:url,t:a.t,f:xhrSignChange};
-							getXHR(obj, xhrSigns);
+							getXHR(obj, xhrSigns, 1);
 							if(tws_auto_fav!=1) break;
 							var light=xml.getElementsByClassName('light');
 							if(light.length>0){
@@ -218,10 +222,7 @@ function tws_signStart(info){
 						/*	自动加喜欢过多会出错	*/
 							td.innerHTML='正在加为喜欢，稍后自动签到！';
 							var obj={id:a.id,url:sign.href,t:a.t,f:a.f};
-							window.setTimeout(function(){
-								getXHR(obj, xhrLinks);
-							},tws_delay);
-							tws_delay+=tws_delay;
+							getXHR(obj, xhrLinks, 1);
 						/**/
 							break;
 						default:
@@ -236,6 +237,7 @@ function tws_signStart(info){
 	function xhrSignChange(){
 		for(var i=0; i<xhrSigns.length; i++){
 			if(xhrSigns[i].xhr.readyState==4){
+				tws_delay_x-=tws_delay;
 				var a=xhrSigns[i].obj;
 				var xml=xhrSigns[i].xhr.responseXML;
 				xhrSigns.splice(i,1);
@@ -248,14 +250,14 @@ function tws_signStart(info){
 					var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
 					if(sign.textContent!='已签到'){
 						if(text.indexOf('汗，操作未成功')==0){
-							setCell(td,'汗，操作未成功,请手动',sign.lastChild.href,'签到'+text);
+							if(sign.textContent=="喜欢本吧")
+								setCell(td,'您未加入本吧，无法判断是否已经签到，或者试试',a.url,'手动签到');
+							else setCell(td,'汗，签到失败，或者试试',a.url,'手动签到');
 							return;
 						}
 						td.innerHTML='操作失败，正在重新签到！'+text;
 						var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:a.f};
-						window.setTimeout(function(){
-							getXHR(obj, xhrLinks);
-						},tws_delay);
+						getXHR(obj, xhrLinks, 1);
 					} else {
 						td.innerHTML='未知错误，之前已签到！';
 						abc.list[a.t]=0;
