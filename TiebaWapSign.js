@@ -2,7 +2,7 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.0.5
+// @version		0.2.0.6
 // @created		2012-11-23
 // @lastUpdated	2012-11-25
 // @namespace	https://github.com/izml/
@@ -16,8 +16,9 @@
 // ==/UserScript==
 
 var tws_tip = 1;		// 开启每日手机签到提示：0=关闭; 1=开启
-var tws_auto_fav=1;		// 自动为未加入的贴吧添加“喜欢”,建议关闭(影响签到速度)
-var tws_delay=800;		// 签到延时，毫秒
+var tws_auto_fav=1;		// 自动为未加入的贴吧添加“喜欢”
+	//	说明：0=关闭; 1=已有签到信息的贴吧不会自动添加"喜欢"; 2=强制添加
+var tws_delay=1100;		// 签到延时，毫秒
 var tws_storage=window.localStorage;
 var tws_let=tws_getState();
 window.addEventListener('DOMContentLoaded',tws_show_tip,false);
@@ -150,8 +151,8 @@ function tws_signStart(info){
 		var td=getCell(tr[i]);
 		var a=tr[i].firstElementChild.firstElementChild;
 		var exp=abc.list[a.textContent];
-		if(typeof exp=='undefined'){
-			td.innerHTML='正在获取签到信息。。。';
+		if(typeof exp=='undefined' || tws_auto_fav==2){
+			td.innerHTML='正在获取当前贴吧相关信息。。。';
 			var obj={id:i,url:a.href,t:a.textContent,f:xhrLinkChange};
 			getXHR(obj, xhrLinks, 0);
 		} else if(Number(exp)>0) td.innerHTML='<span class="light">已签到！经验值+'+exp+'</span>';
@@ -214,7 +215,7 @@ function tws_signStart(info){
 							var url=sign.href.replace(/favolike\?uid=\d+\&itb_/,'sign?');
 							var obj={id:a.id,url:url,t:a.t,f:xhrSignChange};
 							getXHR(obj, xhrSigns, 1);
-							if(tws_auto_fav!=1) break;
+							if(tws_auto_fav<1) break;
 							var light=xml.getElementsByClassName('light');
 							if(light.length>0){
 								var text=light[0].textContent;
