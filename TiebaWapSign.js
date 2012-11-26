@@ -2,7 +2,7 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.0.7
+// @version		0.2.1
 // @created		2012-11-23
 // @lastUpdated	2012-11-26
 // @namespace	https://github.com/izml/
@@ -60,7 +60,7 @@ function tws_show_tip(){
 }
 
 function tws_wap_sign(){
-	if(location.href.search(/wapp\.baidu\.com\/f\/.*tab=favorite/)<0){
+	if(location.href.search(/wapp\.baidu\.com\/.+tab=favorite/)<0){
 		var url='http://wapp.baidu.com/f/m?tn=bdFBW&tab=favorite';
 		if(location.hostname=='wapp.baidu.com'){
 			tws_storage['tws_let_sign']=1;
@@ -145,10 +145,10 @@ function tws_signStart(info){
 	tws_storage['tws_let_sign']=0;
 	if(document.body.textContent.indexOf('对不起,您没有访问权限!')==0) return;
 	var tr=document.getElementsByTagName('table')[0].rows;
-	var xhrLinks=[],xhrSigns=[];
+	var xhrLinks=[],xhrSigns=[],xhrFavs=[];
 	abc.tips=1;
 	for(var i=0; i<tr.length; i++){
-		var td=getCell(tr[i]);
+		var td=getCell(i,3);
 		var a=tr[i].firstElementChild.firstElementChild;
 		var exp=abc.list[a.textContent];
 		if(typeof exp=='undefined' || tws_auto_fav==2){
@@ -158,10 +158,10 @@ function tws_signStart(info){
 		} else if(Number(exp)>0) td.innerHTML='<span class="light">已签到！经验值+'+exp+'</span>';
 		else td.innerHTML='之前已签到！获得的经验值未知';
 	}
-	function getCell(tr){
-		var td=tr.cells[3];
+	function getCell(i,j){
+		var td=tr[i].cells[j];
 		if(typeof td!='object')
-			td=tr.insertCell(-1);
+			td=tr[i].insertCell(-1);
 		return td;
 	}
 	function setCell(td,s,url,t){
@@ -179,9 +179,9 @@ function tws_signStart(info){
 		if(delay>0){
 			setTimeout(function(){getXHR_nd(obj, xhrs, delay);},tws_delay_x);
 			tws_delay_x+=tws_delay;
-		} else getXHR_nd(obj, xhrs, delay);
+		} else getXHR_nd(obj, xhrs);
 	}
-	function getXHR_nd(obj, xhrs, delay){
+	function getXHR_nd(obj, xhrs){
 		var xhr=new XMLHttpRequest();
 		xhr.onreadystatechange = obj.f;
 		xhr.open('GET',obj.url,false);
@@ -192,11 +192,10 @@ function tws_signStart(info){
 		for(var i=0; i<xhrLinks.length; i++){
 			if(xhrLinks[i].xhr.readyState==4){
 				var a = xhrLinks[i].obj;
+				var exp=abc.list[a.t];
+				var td=getCell(a.id,3);
 				var xml = xhrLinks[i].xhr.responseXML;
 				var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
-				var td=getCell(tr[a.id]);
-				xhrLinks.splice(i,1);
-				var exp=abc.list[a.t];
 				if(typeof sign=='object' && sign!=null){
 					switch(sign.textContent){
 						case '签到':
@@ -225,19 +224,11 @@ function tws_signStart(info){
 								getXHR(obj, xhrSigns, 1);
 							}
 							if(tws_auto_fav<1) break;
-							var light=xml.getElementsByClassName('light');
-							if(light.length>0){
-								var text=light[0].textContent;
-								if(text.indexOf('汗，操作未成功')==0){
-									setCell(td,'汗，操作未成功,请手动',sign.href,'加喜欢');
-									break;
-								}
-							}
 						//	setCell(td,'请手动',sign.href,'加喜欢');
 						/*	自动加喜欢过多会出错	*/
-							td.innerHTML+='　正在加为喜欢！';
-							var obj={id:a.id,url:sign.href,t:a.t,f:a.f};
-							getXHR(obj, xhrLinks, 1);
+							td.previousSibling.innerHTML='正在加为喜欢！';
+							var obj2={id:a.id,url:sign.href,t:a.t,f:xhrFavChange};
+							getXHR(obj2, xhrFavs, 1);
 						/**/
 							break;
 						default:
@@ -246,47 +237,81 @@ function tws_signStart(info){
 				} else {
 					td.innerHTML='错误，可能不支持签到！';
 				}
+				xhrLinks.splice(i,1);
 			}
 		}
 	}
 	function xhrSignChange(){
 		for(var i=0; i<xhrSigns.length; i++){
 			if(xhrSigns[i].xhr.readyState==4){
-				tws_delay_x-=tws_delay;
 				var a=xhrSigns[i].obj;
+				var exp=abc.list[a.t];
+				var td=getCell(a.id,3);
 				var xml=xhrSigns[i].xhr.responseXML;
-				xhrSigns.splice(i,1);
 				var light=xml.getElementsByClassName('light');
-				var td=getCell(tr[a.id]);
 				var text='';
 				if(light.length>0)
 					text=light[0].textContent;
+				if(exp){
+					if(exp>0){
+						td.innerHTML='<span class="light">已签到！经验值+'+exp+'</span>';
+					} else td.innerHTML='之前已签到！经验值未知';
+					return;
+				}
 				if(text.indexOf('签到成功')<0){
 					var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
 					if(sign.textContent!='已签到'){
 						if(text.indexOf('汗，操作未成功')==0){
-							if(sign.textContent=="喜欢本吧")
-								setCell(td,'您未加入本吧，无法判断是否已经签到，或者试试',a.url,'手动签到');
-							else setCell(td,'汗，签到失败，或者试试',a.url,'手动签到');
+							setCell(td,'汗，签到失败，或者试试',a.url,'手动签到');
 							return;
 						}
 						td.innerHTML='操作失败，正在重新签到！'+text;
-						var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:a.f};
+						var obj={id:a.id,url:a.url,t:a.t,f:a.f};
 						getXHR(obj, xhrLinks, 1);
 					} else {
-						var exp=abc.list[a.t]
-						if(exp>0){
-							td.innerHTML='<span class="light">已签到！经验值+'+exp+'</span>';
-						} else {
-							td.innerHTML='未知错误，之前已签到！';
-							abc.list[a.t]=0;
-						}
+						td.innerHTML='未知错误，之前已签到！';
+						abc.list[a.t]=0;
 					}
 				} else {
 					abc.list[a.t]=Number(light[1].textContent);
 					td.innerHTML='<span class="light">'+text+'</span>';
 				}
+				tws_delay_x-=tws_delay;
 				tws_setInfo(info);
+				xhrSigns.splice(i,1);
+			}
+		}
+	}
+	function xhrFavChange(){
+		for(var i=0; i<xhrFavs.length; i++){
+			if(xhrFavs[i].xhr.readyState==4){
+				var a=xhrFavs[i].obj;
+				var exp=abc.list[a.t]
+				var td=getCell(a.id,2);
+				var xml=xhrFavs[i].xhr.responseXML;
+				var light=xml.getElementsByClassName('light');
+				var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
+				var text='';
+				if(light.length>0)
+					text=light[0].textContent;
+				if(text.indexOf('恭喜你成为')<0){
+					if(sign.textContent.indexOf('签到')>=0){
+						td.innerHTML='已加入本吧！';
+					} else {
+						td.innerHTML='加入失败！信息：'+text;
+					}
+				} else {
+					td.innerHTML='<span class="light">'+text+'</span>';
+				}
+				try{
+					var t=sign.previousSibling.lastChild.textContent;
+					if(/\(等级\d+\)/.test(t))
+						td.previousSibling.innerHTML=t;
+				} catch(e){
+					console.log('等级信息获取失败：\n'+sign.parentNode.innerHTML)
+				}
+				tws_delay_x-=tws_delay;
+				xhrFavs.splice(i,1);
 			}
 		}
 	}
