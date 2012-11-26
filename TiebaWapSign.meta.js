@@ -2,9 +2,9 @@
 // @name	Tieba wap sign for Opera
 // @author	izml
 // @description	Opera 版贴吧 wap 批量签到
-// @version		0.2.0.6
+// @version		0.2.0.7
 // @created		2012-11-23
-// @lastUpdated	2012-11-25
+// @lastUpdated	2012-11-26
 // @namespace	https://github.com/izml/
 // @homepage	https://github.com/izml/tws
 // @downloadURL	https://raw.github.com/izml/tws/master/TiebaWapSign.js

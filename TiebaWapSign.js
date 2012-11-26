@@ -2,9 +2,9 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.0.6
+// @version		0.2.0.7
 // @created		2012-11-23
-// @lastUpdated	2012-11-25
+// @lastUpdated	2012-11-26
 // @namespace	https://github.com/izml/
 // @homepage	https://github.com/izml/tws
 // @downloadURL	https://raw.github.com/izml/tws/master/TiebaWapSign.js
@@ -18,7 +18,7 @@
 var tws_tip = 1;		// 开启每日手机签到提示：0=关闭; 1=开启
 var tws_auto_fav=1;		// 自动为未加入的贴吧添加“喜欢”
 	//	说明：0=关闭; 1=已有签到信息的贴吧不会自动添加"喜欢"; 2=强制添加
-var tws_delay=1100;		// 签到延时，毫秒
+var tws_delay=1200;		// 签到延时，毫秒
 var tws_storage=window.localStorage;
 var tws_let=tws_getState();
 window.addEventListener('DOMContentLoaded',tws_show_tip,false);
@@ -176,14 +176,17 @@ function tws_signStart(info){
 		this.xhr = xhr;
 	}
 	function getXHR(obj, xhrs, delay){
+		if(delay>0){
+			setTimeout(function(){getXHR_nd(obj, xhrs, delay);},tws_delay_x);
+			tws_delay_x+=tws_delay;
+		} else getXHR_nd(obj, xhrs, delay);
+	}
+	function getXHR_nd(obj, xhrs, delay){
 		var xhr=new XMLHttpRequest();
 		xhr.onreadystatechange = obj.f;
-		xhr.open('GET',obj.url,Boolean(delay));
+		xhr.open('GET',obj.url,false);
 		xhrs.push(new setXHR(obj, xhr));
-		if(delay>0){
-			setTimeout(function(){xhr.send();},tws_delay);
-		//	tws_delay_x+=tws_delay_x;
-		} else xhr.send();
+		xhr.send();
 	}
 	function xhrLinkChange(){
 		for(var i=0; i<xhrLinks.length; i++){
@@ -193,6 +196,7 @@ function tws_signStart(info){
 				var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
 				var td=getCell(tr[a.id]);
 				xhrLinks.splice(i,1);
+				var exp=abc.list[a.t];
 				if(typeof sign=='object' && sign!=null){
 					switch(sign.textContent){
 						case '签到':
@@ -201,7 +205,6 @@ function tws_signStart(info){
 							getXHR(obj, xhrSigns, 1);
 							break;
 						case '已签到':
-							var exp=abc.list[a.t];
 							if(exp>0){
 								td.innerHTML='<span class="light">已签到！经验值+'+exp+'</span>';
 								break;
@@ -211,10 +214,16 @@ function tws_signStart(info){
 							td.innerHTML='之前已签到！获得的经验值未知';
 							break;
 						case '喜欢本吧':	// 可能会有问题
-							td.innerHTML='正在签到。'
-							var url=sign.href.replace(/favolike\?uid=\d+\&itb_/,'sign?');
-							var obj={id:a.id,url:url,t:a.t,f:xhrSignChange};
-							getXHR(obj, xhrSigns, 1);
+							if(exp){
+								td.innerHTML='已签到，获得经验值'
+								if(exp>0) td.innerHTML+='+'+exp;
+								else td.innerHTML+='未知';
+							} else {
+								td.innerHTML='正在签到。'
+								var url=sign.href.replace(/favolike\?uid=\d+\&itb_/,'sign?');
+								var obj={id:a.id,url:url,t:a.t,f:xhrSignChange};
+								getXHR(obj, xhrSigns, 1);
+							}
 							if(tws_auto_fav<1) break;
 							var light=xml.getElementsByClassName('light');
 							if(light.length>0){
@@ -226,7 +235,7 @@ function tws_signStart(info){
 							}
 						//	setCell(td,'请手动',sign.href,'加喜欢');
 						/*	自动加喜欢过多会出错	*/
-							td.innerHTML+='正在加为喜欢！';
+							td.innerHTML+='　正在加为喜欢！';
 							var obj={id:a.id,url:sign.href,t:a.t,f:a.f};
 							getXHR(obj, xhrLinks, 1);
 						/**/
