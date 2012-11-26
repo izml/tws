@@ -2,9 +2,9 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.1
+// @version		0.2.1.1
 // @created		2012-11-23
-// @lastUpdated	2012-11-26
+// @lastUpdated	2012-11-27
 // @namespace	https://github.com/izml/
 // @homepage	https://github.com/izml/tws
 // @downloadURL	https://raw.github.com/izml/tws/master/TiebaWapSign.js
@@ -195,6 +195,7 @@ function tws_signStart(info){
 				var exp=abc.list[a.t];
 				var td=getCell(a.id,3);
 				var xml = xhrLinks[i].xhr.responseXML;
+				xhrLinks.splice(i,1);
 				var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
 				if(typeof sign=='object' && sign!=null){
 					switch(sign.textContent){
@@ -237,7 +238,6 @@ function tws_signStart(info){
 				} else {
 					td.innerHTML='错误，可能不支持签到！';
 				}
-				xhrLinks.splice(i,1);
 			}
 		}
 	}
@@ -248,6 +248,8 @@ function tws_signStart(info){
 				var exp=abc.list[a.t];
 				var td=getCell(a.id,3);
 				var xml=xhrSigns[i].xhr.responseXML;
+				tws_delay_x-=tws_delay;
+				xhrSigns.splice(i,1);
 				var light=xml.getElementsByClassName('light');
 				var text='';
 				if(light.length>0)
@@ -276,9 +278,7 @@ function tws_signStart(info){
 					abc.list[a.t]=Number(light[1].textContent);
 					td.innerHTML='<span class="light">'+text+'</span>';
 				}
-				tws_delay_x-=tws_delay;
 				tws_setInfo(info);
-				xhrSigns.splice(i,1);
 			}
 		}
 	}
@@ -289,6 +289,8 @@ function tws_signStart(info){
 				var exp=abc.list[a.t]
 				var td=getCell(a.id,2);
 				var xml=xhrFavs[i].xhr.responseXML;
+				tws_delay_x-=tws_delay;
+				xhrFavs.splice(i,1);
 				var light=xml.getElementsByClassName('light');
 				var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
 				var text='';
@@ -310,8 +312,6 @@ function tws_signStart(info){
 				} catch(e){
 					console.log('等级信息获取失败：\n'+sign.parentNode.innerHTML)
 				}
-				tws_delay_x-=tws_delay;
-				xhrFavs.splice(i,1);
 			}
 		}
 	}
