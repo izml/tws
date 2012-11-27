@@ -19,6 +19,7 @@ var tws_tip = 1;		// 开启每日手机签到提示：0=关闭; 1=开启
 var tws_auto_fav=1;		// 自动为未加入的贴吧添加“喜欢”
 	//	说明：0=关闭; 1=已有签到信息的贴吧不会自动添加"喜欢"; 2=强制添加
 var tws_delay=1200;		// 签到延时，毫秒
+var tws_retry=1;		// 签到失败重试次数，0为不重试。
 var tws_storage=window.localStorage;
 var tws_let=tws_getState();
 window.addEventListener('DOMContentLoaded',tws_show_tip,false);
@@ -87,10 +88,15 @@ function tws_getInfo(){
 			var xhr=new XMLHttpRequest();
 			xhr.onreadystatechange=function(){
 				if(xhr.readyState==4){
-					var a=xhr.responseXML.getElementsByClassName('s')[0].firstElementChild.firstElementChild;
-					if(a.textContent=='>>我的i贴吧'){
-						var n=a.href.match(/[?&]un=([^&]+)/)[1];
-						bid=decodeURI(n);
+					var b=xhr.responseXML.lastChild;
+					var a=b.getElementsByTagName('a');
+					for(var i=0;i<a.length;i++){
+						var u=a[i].href;
+						if(/[?&]un=/.test(u)){
+							n=u.match(/[?&]un=([^&]+)/)[1];
+							bid=decodeURI(n);
+							break;
+						}
 					}
 				}
 			}
@@ -117,7 +123,7 @@ function tws_getInfo(){
 		default:break;
 	}
 	if(bid==''){
-		var bid=prompt('错误，暂时找不到账号名\n\n或者手动输入一个当前账号名','');
+		var bid=prompt('错误，暂时找不到账号名\n\n或者手动输入名称','');
 	}
 	var info={cid:bid};
 	info[bid]={tips:0,date:getNow(),list:{}}
@@ -201,7 +207,7 @@ function tws_signStart(info){
 					switch(sign.textContent){
 						case '签到':
 							td.innerHTML='正在进行签到。。。';
-							var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange}
+							var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange,r:tws_retry}
 							getXHR(obj, xhrSigns, 1);
 							break;
 						case '已签到':
@@ -221,7 +227,7 @@ function tws_signStart(info){
 							} else {
 								td.innerHTML='正在签到。'
 								var url=sign.href.replace(/favolike\?uid=\d+\&itb_/,'sign?');
-								var obj={id:a.id,url:url,t:a.t,f:xhrSignChange};
+								var obj={id:a.id,url:url,t:a.t,f:xhrSignChange,r:tws_retry};
 								getXHR(obj, xhrSigns, 1);
 							}
 							if(tws_auto_fav<1) break;
@@ -247,6 +253,12 @@ function tws_signStart(info){
 				var a=xhrSigns[i].obj;
 				var exp=abc.list[a.t];
 				var td=getCell(a.id,3);
+				if(exp){
+					if(exp>0){
+						td.innerHTML='<span class="light">已签到！经验值+'+exp+'</span>';
+					} else td.innerHTML='之前已签到！经验值未知';
+					return;
+				}
 				var xml=xhrSigns[i].xhr.responseXML;
 				tws_delay_x-=tws_delay;
 				xhrSigns.splice(i,1);
@@ -254,25 +266,30 @@ function tws_signStart(info){
 				var text='';
 				if(light.length>0)
 					text=light[0].textContent;
-				if(exp){
-					if(exp>0){
-						td.innerHTML='<span class="light">已签到！经验值+'+exp+'</span>';
-					} else td.innerHTML='之前已签到！经验值未知';
-					return;
-				}
 				if(text.indexOf('签到成功')<0){
 					var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
-					if(sign.textContent!='已签到'){
-						if(text.indexOf('汗，操作未成功')==0){
-							setCell(td,'汗，签到失败，或者试试',a.url,'手动签到');
-							return;
-						}
-						td.innerHTML='操作失败，正在重新签到！'+text;
-						var obj={id:a.id,url:a.url,t:a.t,f:a.f};
-						getXHR(obj, xhrLinks, 1);
-					} else {
-						td.innerHTML='未知错误，之前已签到！';
-						abc.list[a.t]=0;
+					switch(sign.textContent){
+						case '签到':
+							a.r--;
+							if(a.r>0){
+							td.innerHTML='签到失败，正在重新签到！。。。'+text;
+							var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange,r:a.r};
+							getXHR(obj, xhrSigns, 1);
+							} else {
+								setCell(td,'汗，'+(tws_retry+1)+'次签到失败，或者试试',a.url,'手动签到');
+							}
+							break;
+						case '已签到':
+							abc.list[a.t]=0;
+							tws_setInfo(info);
+							td.innerHTML='之前已签到！获得的经验值未知';
+							break;
+						case '喜欢本吧':
+							setCell(td,'未加入本吧，无法判断签到状态，或者试试',a.url,'手动签到');
+							setCell(td.previousSibling,'请手动',sign.href,'加喜欢');
+							break;
+						default:
+							td.innerHTML='未知错误！请尝试手动签到';
 					}
 				} else {
 					abc.list[a.t]=Number(light[1].textContent);
@@ -310,7 +327,7 @@ function tws_signStart(info){
 					if(/\(等级\d+\)/.test(t))
 						td.previousSibling.innerHTML=t;
 				} catch(e){
-					console.log('等级信息获取失败：\n'+sign.parentNode.innerHTML)
+					console.log('等级获取失败：\n'+sign.parentNode.innerHTML);
 				}
 			}
 		}
