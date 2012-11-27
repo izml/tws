@@ -2,7 +2,7 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.1.1
+// @version		0.2.1.4
 // @created		2012-11-23
 // @lastUpdated	2012-11-27
 // @namespace	https://github.com/izml/
@@ -93,7 +93,7 @@ function tws_getInfo(){
 					for(var i=0;i<a.length;i++){
 						var u=a[i].href;
 						if(/[?&]un=/.test(u)){
-							n=u.match(/[?&]un=([^&]+)/)[1];
+							var n=u.match(/[?&]un=([^&]+)/)[1];
 							bid=decodeURI(n);
 							break;
 						}
@@ -194,15 +194,23 @@ function tws_signStart(info){
 		xhrs.push(new setXHR(obj, xhr));
 		xhr.send();
 	}
+	function getSignInfo(xml){
+		var bc=xml.getElementsByClassName('bc');
+		for(var i=0;i<bc.length;i++){
+			if(/.*吧\s+第1页/.test(bc[i].firstChild.textContent)){
+				return bc[i].lastChild.lastChild;
+			}
+		}
+		return null;
+	}
 	function xhrLinkChange(){
 		for(var i=0; i<xhrLinks.length; i++){
 			if(xhrLinks[i].xhr.readyState==4){
 				var a = xhrLinks[i].obj;
 				var exp=abc.list[a.t];
 				var td=getCell(a.id,3);
-				var xml = xhrLinks[i].xhr.responseXML;
+				var sign=getSignInfo(xhrLinks[i].xhr.responseXML)
 				xhrLinks.splice(i,1);
-				var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
 				if(typeof sign=='object' && sign!=null){
 					switch(sign.textContent){
 						case '签到':
@@ -267,7 +275,7 @@ function tws_signStart(info){
 				if(light.length>0)
 					text=light[0].textContent;
 				if(text.indexOf('签到成功')<0){
-					var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
+					var sign=getSignInfo(xml);
 					switch(sign.textContent){
 						case '签到':
 							a.r--;
@@ -276,7 +284,7 @@ function tws_signStart(info){
 							var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange,r:a.r};
 							getXHR(obj, xhrSigns, 1);
 							} else {
-								setCell(td,'汗，'+(tws_retry+1)+'次签到失败，或者试试',a.url,'手动签到');
+								setCell(td,'汗，'+(tws_retry+1)+'次签到失败，试试',sign.lastChild.href,'手动签到');
 							}
 							break;
 						case '已签到':
