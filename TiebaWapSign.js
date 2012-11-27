@@ -2,7 +2,7 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.1.6
+// @version		0.2.1.7
 // @created		2012-11-23
 // @lastUpdated	2012-11-27
 // @namespace	https://github.com/izml/
@@ -322,9 +322,9 @@ function tws_signStart(info){
 				var xml=xhrFavs[i].xhr.responseXML;
 				tws_delay_x-=tws_delay;
 				xhrFavs.splice(i,1);
-				var light=xml.getElementsByClassName('light');
-				var sign=xml.getElementsByClassName('bc')[0].lastChild.lastChild;
+				var sign=getSignInfo(xml);
 				var text='';
+				var light=xml.getElementsByClassName('light');
 				if(light.length>0)
 					text=light[0].textContent;
 				if(text.indexOf('恭喜你成为')<0){
@@ -335,13 +335,16 @@ function tws_signStart(info){
 					}
 				} else {
 					td.innerHTML='<span class="light">'+text+'</span>';
-				}
-				try{
-					var t=sign.previousSibling.lastChild.textContent;
-					if(/\(等级\d+\)/.test(t))
-						td.previousSibling.innerHTML=t;
-				} catch(e){
-					console.log('等级获取失败：\n'+sign.parentNode.innerHTML);
+					try{
+						var t=sign.previousSibling.lastChild.textContent;
+						if(/\(等级\d+\)/.test(t)){
+							td.previousSibling.innerHTML=t;
+							return;
+						}
+					} catch(e){
+						console.log('等级获取失败：\n'+sign.parentNode.innerHTML);
+					}
+					td.previousSibling.innerHTML='等级为1';
 				}
 			}
 		}
