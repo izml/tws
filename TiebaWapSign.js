@@ -2,7 +2,7 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.1.4
+// @version		0.2.1.5
 // @created		2012-11-23
 // @lastUpdated	2012-11-27
 // @namespace	https://github.com/izml/
@@ -278,11 +278,10 @@ function tws_signStart(info){
 					var sign=getSignInfo(xml);
 					switch(sign.textContent){
 						case '签到':
-							a.r--;
 							if(a.r>0){
-							td.innerHTML='签到失败，正在重新签到！。。。'+text;
-							var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange,r:a.r};
-							getXHR(obj, xhrSigns, 1);
+								td.innerHTML='签到失败，正在重新签到！...返回信息：'+text;
+								var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange,r:--a.r};
+								getXHR(obj, xhrSigns, 1);
 							} else {
 								setCell(td,'汗，'+(tws_retry+1)+'次签到失败，试试',sign.lastChild.href,'手动签到');
 							}
