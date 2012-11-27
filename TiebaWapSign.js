@@ -2,7 +2,7 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.1.5
+// @version		0.2.1.6
 // @created		2012-11-23
 // @lastUpdated	2012-11-27
 // @namespace	https://github.com/izml/
@@ -292,8 +292,15 @@ function tws_signStart(info){
 							td.innerHTML='之前已签到！获得的经验值未知';
 							break;
 						case '喜欢本吧':
-							setCell(td,'未加入本吧，无法判断签到状态，或者试试',a.url,'手动签到');
-							setCell(td.previousSibling,'请手动',sign.href,'加喜欢');
+							if(a.r>0){
+								td.innerHTML='无法判断签到状态，正在重签！...返回信息：'+text;
+								var url=sign.href.replace(/favolike\?uid=\d+\&itb_/,'sign?');
+								var obj={id:a.id,url:url,t:a.t,f:xhrSignChange,r:--a.r};
+								getXHR(obj, xhrSigns, 1);
+							} else if(td.previousSibling.textContent=''){
+								setCell(td,'未加入本吧，无法判断签到状态，或者试试',a.url,'手动签到');
+								setCell(td.previousSibling,'请手动',sign.href,'加喜欢');
+							}
 							break;
 						default:
 							td.innerHTML='未知错误！请尝试手动签到';
