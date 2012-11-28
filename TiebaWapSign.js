@@ -2,9 +2,9 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.1.8
+// @version		0.2.1.9
 // @created		2012-11-23
-// @lastUpdated	2012-11-28
+// @lastUpdated	2012-11-29
 // @namespace	https://github.com/izml/
 // @homepage	https://github.com/izml/tws
 // @downloadURL	https://raw.github.com/izml/tws/master/TiebaWapSign.js
@@ -18,7 +18,7 @@
 var tws_tip = 1;		// 开启每日手机签到提示：0=关闭; 1=开启
 var tws_auto_fav=1;		// 自动为未加入的贴吧添加“喜欢”
 	//	说明：0=关闭; 1=已有签到信息的贴吧不会自动添加"喜欢"; 2=强制添加
-var tws_delay=1300;		// 签到延时，毫秒
+var tws_delay=1234;		// 签到延时，毫秒
 var tws_retry=2;		// 签到失败重试次数，0为不重试。
 var tws_storage=window.localStorage;
 var tws_let=tws_getState();
@@ -183,9 +183,9 @@ function tws_signStart(info){
 		this.xhr = xhr;
 	}
 	function getXHR(obj, xhrs, delay){
-		var t=500;
+		var t=1000;
 		if(delay>0){
-			t=tws_delay;
+			t=tws_delay_x+tws_delay*(tws_retry-obj.r);
 			tws_delay_x+=tws_delay;
 		}
 		setTimeout(function(){getXHR_nd(obj, xhrs, delay);},t);
@@ -281,12 +281,12 @@ function tws_signStart(info){
 					var sign=getSignInfo(xml);
 					switch(sign.textContent){
 						case '签到':
-							if(a.r>0){
-								td.innerHTML='签到失败，正在重新签到！...返回信息：'+text;
-								var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange,r:--a.r};
+							if(a.r-->0){
+								td.innerHTML='第 '+(tws_retry-a.r)+' 次签到失败，正在重签！...返回信息：'+text;
+								var obj={id:a.id,url:sign.lastChild.href,t:a.t,f:xhrSignChange,r:a.r};
 								getXHR(obj, xhrSigns, 1);
 							} else {
-								setCell(td,'汗，'+(tws_retry+1)+'次签到失败，试试',sign.lastChild.href,'手动签到');
+								setCell(td,'汗，'+(tws_retry+1)+' 次签到失败，试试',sign.lastChild.href,'手动签到');
 							}
 							break;
 						case '已签到':
@@ -310,7 +310,7 @@ function tws_signStart(info){
 					}
 				} else {
 					abc.list[a.t]=Number(light[1].textContent);
-					td.innerHTML='<span class="light">第'+(tws_retry-a.r+1)+'次'+text+'</span>';
+					td.innerHTML='<span class="light">第 '+(tws_retry-a.r+1)+' 次'+text+'</span>';
 				}
 				tws_setInfo(info);
 			}
