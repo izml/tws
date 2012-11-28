@@ -2,15 +2,15 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.1.7
+// @version		0.2.1.8
 // @created		2012-11-23
-// @lastUpdated	2012-11-27
+// @lastUpdated	2012-11-28
 // @namespace	https://github.com/izml/
 // @homepage	https://github.com/izml/tws
 // @downloadURL	https://raw.github.com/izml/tws/master/TiebaWapSign.js
 // @updateURL	https://raw.github.com/izml/tws/master/TiebaWapSign.meta.js
-// @run-at	document-start
 // @grant	none
+// @run-at	document-start
 // @include		http://wapp.baidu.com/*
 // @include		http://tieba.baidu.com/*
 // ==/UserScript==
@@ -18,18 +18,19 @@
 var tws_tip = 1;		// 开启每日手机签到提示：0=关闭; 1=开启
 var tws_auto_fav=1;		// 自动为未加入的贴吧添加“喜欢”
 	//	说明：0=关闭; 1=已有签到信息的贴吧不会自动添加"喜欢"; 2=强制添加
-var tws_delay=1200;		// 签到延时，毫秒
-var tws_retry=1;		// 签到失败重试次数，0为不重试。
+var tws_delay=1300;		// 签到延时，毫秒
+var tws_retry=2;		// 签到失败重试次数，0为不重试。
 var tws_storage=window.localStorage;
 var tws_let=tws_getState();
 window.addEventListener('DOMContentLoaded',tws_show_tip,false);
 
 function tws_getState(){
 	if(location.hostname!='wapp.baidu.com') return 0;
-	var lets=tws_storage['tws_let_sign'];
-	if(Number(lets)==1) return 1;
+	tws_storage.removeItem('tws_let_sign');
+//	var lets=tws_storage['tws_let_sign'];
+//	if(Number(lets)==1) return 1;
 	if(window.opener){
-		lets=Number(window.name);
+		var lets=Number(window.name);
 		if(lets==0 || lets==1){
 			window.name='我喜欢的吧';
 			return lets;
@@ -62,11 +63,11 @@ function tws_show_tip(){
 
 function tws_wap_sign(){
 	if(location.href.search(/wapp\.baidu\.com\/.+tab=favorite/)<0){
-		var url='http://wapp.baidu.com/f/m?tn=bdFBW&tab=favorite';
-		if(location.hostname=='wapp.baidu.com'){
-			tws_storage['tws_let_sign']=1;
-			window.open(url)
-		} else
+//		var url='http://wapp.baidu.com/f/m?tn=bdFBW&tab=favorite';
+//		if(location.hostname=='wapp.baidu.com'){
+//			tws_storage['tws_let_sign']=1;
+//			window.open(url)
+//		} else
 			window.open('http://wapp.baidu.com/f/m?tn=bdFBW&tab=favorite',1);
 		return;
 	}
@@ -148,7 +149,7 @@ function tws_setInfo(info){
 function tws_signStart(info){
 	var tws_delay_x=tws_delay;
 	var abc=info[info.cid];
-	tws_storage['tws_let_sign']=0;
+//	tws_storage['tws_let_sign']=0;
 	if(document.body.textContent.indexOf('对不起,您没有访问权限!')==0) return;
 	var tr=document.getElementsByTagName('table')[0].rows;
 	var xhrLinks=[],xhrSigns=[],xhrFavs=[];
@@ -182,15 +183,17 @@ function tws_signStart(info){
 		this.xhr = xhr;
 	}
 	function getXHR(obj, xhrs, delay){
+		var t=500;
 		if(delay>0){
-			setTimeout(function(){getXHR_nd(obj, xhrs, delay);},tws_delay_x);
+			t=tws_delay;
 			tws_delay_x+=tws_delay;
-		} else getXHR_nd(obj, xhrs);
+		}
+		setTimeout(function(){getXHR_nd(obj, xhrs, delay);},t);
 	}
 	function getXHR_nd(obj, xhrs){
 		var xhr=new XMLHttpRequest();
 		xhr.onreadystatechange = obj.f;
-		xhr.open('GET',obj.url,false);
+		xhr.open('GET',obj.url,true);
 		xhrs.push(new setXHR(obj, xhr));
 		xhr.send();
 	}
@@ -307,7 +310,7 @@ function tws_signStart(info){
 					}
 				} else {
 					abc.list[a.t]=Number(light[1].textContent);
-					td.innerHTML='<span class="light">'+text+'</span>';
+					td.innerHTML='<span class="light">第'+(tws_retry-a.r+1)+'次'+text+'</span>';
 				}
 				tws_setInfo(info);
 			}
