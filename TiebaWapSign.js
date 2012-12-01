@@ -2,7 +2,7 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.2.0
+// @version		0.2.2.1
 // @created		2012-11-23
 // @lastUpdated	2012-12-1
 // @namespace	https://github.com/izml/
@@ -21,7 +21,6 @@ var tws_data={
 		//	说明：0=关闭; 1=已有签到信息的贴吧不会自动添加"喜欢"; 2=强制添加
 	delay:		1234,		// 签到延时，毫秒
 	retry:		2,		// 签到失败重试次数，0为不重试。
-	lets:tws_getState(),
 	get:function(k){
 		var v=window.localStorage[k];
 		if (v)
@@ -39,22 +38,22 @@ var tws_data={
 	},
 	getInfo:function(){
 		return this.get('tws_wap_sign_info');
-	}
-}
-window.addEventListener('DOMContentLoaded',tws_show_tip,false);
-function tws_getState(){
-	if(location.hostname!='wapp.baidu.com') return 0;
-	if(tws_data.get('tws_let_sign')==1) return 1;
-	if(window.opener){
-		var lets=Number(window.name);
-		if(lets==0 || lets==1){
-			window.name='我喜欢的吧';
-			return lets;
+	},
+	getState:function(){
+		if(location.hostname!='wapp.baidu.com') return 0;
+		if(this.get('tws_let_sign')==1) return 1;
+		if(window.opener){
+			var lets=Number(window.name);
+			if(lets==0 || lets==1){
+				window.name='我喜欢的吧';
+				return lets;
+			}
 		}
+		return 0;
 	}
-	return 0;
-}
-
+};
+tws_data.lets=tws_data.getState();
+window.addEventListener('DOMContentLoaded',tws_show_tip,false);
 function tws_show_tip(){
 	if(tws_data.lets==1){
 		tws_wap_sign();
