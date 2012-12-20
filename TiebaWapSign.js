@@ -2,9 +2,9 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.2.1
+// @version		0.2.2.2
 // @created		2012-11-23
-// @lastUpdated	2012-12-1
+// @lastUpdated	2012-12-20
 // @namespace	https://github.com/izml/
 // @homepage	https://github.com/izml/tws
 // @downloadURL	https://raw.github.com/izml/tws/master/TiebaWapSign.js
@@ -17,6 +17,7 @@
 
 var tws_data={
 	tip:		1,		// 开启每日手机签到提示：0=关闭; 1=开启
+	auto_sign:	1,		// 打开wapp.baidu.com/*tab=favorite*后自动签到(而不需要显示提示)
 	auto_fav:	1,		// 自动为未加入的贴吧添加“喜欢”
 		//	说明：0=关闭; 1=已有签到信息的贴吧不会自动添加"喜欢"; 2=强制添加
 	delay:		1234,		// 签到延时，毫秒
@@ -55,7 +56,8 @@ var tws_data={
 tws_data.lets=tws_data.getState();
 window.addEventListener('DOMContentLoaded',tws_show_tip,false);
 function tws_show_tip(){
-	if(tws_data.lets==1){
+	if(tws_data.lets==1 || (tws_data.auto_sign==1 &&
+	 (/wapp\.baidu\.com\/.+tab=favorite/).test(location.href))){
 		tws_wap_sign();
 		return;
 	}
