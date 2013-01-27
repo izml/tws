@@ -2,9 +2,9 @@
 // @name		Tieba wap sign for Opera
 // @author		izml
 // @description	Opera 版贴吧 Wap 批量签到
-// @version		0.2.2.2
+// @version		0.2.2.3
 // @created		2012-11-23
-// @lastUpdated	2012-12-20
+// @lastUpdated	2013-1-27
 // @namespace	https://github.com/izml/
 // @homepage	https://github.com/izml/tws
 // @downloadURL	https://raw.github.com/izml/tws/master/TiebaWapSign.js
@@ -219,7 +219,7 @@ function tws_signStart(info){
 		var bc=xml.getElementsByClassName('bc');
 		for(var i=0;i<bc.length;i++){
 			if(/.*吧\s+第1页/.test(bc[i].firstChild.textContent)){
-				return bc[i].lastChild.lastChild;
+				return bc[i].lastChild.lastChild.lastChild;
 			}
 		}
 		return null;
@@ -230,7 +230,7 @@ function tws_signStart(info){
 				var a = xhrLinks[i].obj;
 				var exp=abc.list[a.t];
 				var td=getCell(a.id,3);
-				var sign=getSignInfo(xhrLinks[i].xhr.responseXML)
+				var sign=getSignInfo(xhrLinks[i].xhr.responseXML);
 				xhrLinks.splice(i,1);
 				if(typeof sign=='object' && sign!=null){
 					switch(sign.textContent){
